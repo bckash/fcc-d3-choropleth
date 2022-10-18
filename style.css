@@ -1,0 +1,34 @@
+
+.br {
+    border: 1px solid black;
+}
+
+#heatmap {
+    width: max-content;
+    margin: auto;
+    text-align: center;
+    font-family: sans-serif;
+}
+
+#title {
+    font-size: 2rem;
+    margin: 20px;
+}
+
+#description {
+    font-size: 1.4rem;
+    margin: 20px
+}
+
+
+#map svg {
+    height: 700px;
+    width: 950px;
+    /* border: 1px solid black; */
+}
+
+#legend {
+    position: relative;
+    bottom: 100px;
+    margin-left: 420px;
+}
