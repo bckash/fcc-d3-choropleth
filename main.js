@@ -40,7 +40,7 @@ let degreeExtent;
 let colorDomain;
 let colorRange;
 
-let drawmap = () => {
+const drawmap = () => {
 
     d3.select("#map").append("svg")
         .selectAll("path")
@@ -77,7 +77,105 @@ let drawmap = () => {
             let county = mapData.filter( i => i.fips === d.id )
             return county[0].bachelorsOrHigher
         })
+        .on("mouseover", () => {
+            toolTip
+                .style("display", "block")
+        })
+        .on("mousemove", (ev,d) => {
 
+            let county = mapData
+                .filter( i => i.fips == `${d.id}` )
+            
+                console.log(county[0])
+
+            toolTip
+                .html(`
+                    <div>
+                        <dt>State: </dt>
+                        <dd>${county[0].state}</dd>
+                    </div>
+                    <div>
+                        <dt>Area Name: </dt>
+                        <dd id="an">${county[0].area_name}</dd>
+                    </div>
+                    <div>
+                        <dt>Bachelor Degree (or higher): </dt>
+                        <dd>${county[0].bachelorsOrHigher}</dd>
+                    </div>
+                    
+                    `)
+                .attr("data-education", () => {
+                    return county[0].bachelorsOrHigher
+                })
+                .style("top", (ev.pageY)-100 +"px")
+                .style("left",(ev.pageX)+20  +"px")
+        })
+        .on("mouseleave", () => {
+            toolTip
+                .style("display","none")
+        })
+
+}
+
+const drawTreshold = () => {
+
+    // 3.1
+    colorRange = ["#EFD6EF", "#DDAFED", "#CC4BE6", "#9C0B9C", "#070471"]
+
+    //3.2
+    degreeExtent = d3.extent(mapData.map( b => b.bachelorsOrHigher))
+
+    const colorDomainInterval = Number(((degreeExtent[1] - degreeExtent[0])/(colorRange.length)).toFixed(3))
+
+    colorDomain = colorRange.map( (d,i) => {
+        return Number((Number(degreeExtent[0]) + i*Number(colorDomainInterval)).toFixed(3))
+    })
+
+    colorDomain.push(degreeExtent[1])
+                        	
+    //3.3
+    const threshold = d3.scaleThreshold()
+        .domain(colorDomain)
+        .range(colorRange)
+
+    //3.4
+    const x = d3.scaleLinear()
+        .domain([degreeExtent[0], degreeExtent[1]])
+        .range([0, 200])
+
+    //3.5
+    const xAxisLegend = d3.axisBottom(x)
+        .tickSize(30)
+        .tickValues(threshold.domain())
+        .tickFormat(d3.format(".1f"))                    
+
+    //3.6
+    const description = d3
+        .select("#legend")
+        .append("svg")
+        .attr("width", 400)
+        .attr("height", 100)
+
+    description 
+        .append("g")
+        .attr("class", "desc-g")
+        .attr("transform","translate(30)")
+        .call(xAxisLegend);
+
+    //3.7
+    const g = d3.select(".desc-g")
+
+    g.select(".domain").remove()
+
+    //3.8, 3.9
+    g.selectAll("rect")
+        .data(colorDomain)
+        .enter()
+        .insert("rect",".tick")
+            .attr("height", 20)
+            .attr("width", x(colorDomain[2]) - x(colorDomain[1]))
+            .attr("x", d => x(d))
+            .attr("fill", (d,i) => colorRange[i])                    
 }
 
 // takes json file and return a promise, with json string converted into js object (data)
@@ -93,68 +191,7 @@ d3.json(urlGeospatial).then(
                     if (error) console.log(error)
                     else {
                         mapData = data
-
-                        // TRESHOLD SCALE
-
-                        // 3.1
-                        colorRange = ["#EFD6EF", "#DDAFED", "#CC4BE6", "#9C0B9C", "#070471"]
-
-                        //3.2
-                        degreeExtent = d3.extent(mapData.map( b => b.bachelorsOrHigher))
-
-                        const colorDomainInterval = Number(((degreeExtent[1] - degreeExtent[0])/(colorRange.length)).toFixed(3))
-
-                        colorDomain = colorRange.map( (d,i) => {
-                            return Number((Number(degreeExtent[0]) + i*Number(colorDomainInterval)).toFixed(3))
-                        })
-
-                        colorDomain.push(degreeExtent[1])
-                        	
-                        //3.3
-                        const threshold = d3.scaleThreshold()
-                            .domain(colorDomain)
-                            .range(colorRange)
-
-                        //3.4
-                        const x = d3.scaleLinear()
-                            .domain([degreeExtent[0], degreeExtent[1]])
-                            .range([0, 200])
-
-                        //3.5
-                        const xAxisLegend = d3.axisBottom(x)
-                            .tickSize(30)
-                            .tickValues(threshold.domain())
-                            .tickFormat(d3.format(".1f"))
-
-                        //3.6
-                        const description = d3
-                            .select("#legend")
-                            .append("svg")
-                            .attr("width", 400)
-                            .attr("height", 100)
-
-                        description 
-                            .append("g")
-                            .attr("class", "desc-g")
-                            .attr("transform","translate(30)")
-                            .call(xAxisLegend);
-
-                        //3.7
-                        const g = d3.select(".desc-g")
-
-                        g.select(".domain").remove()
-
-                        //3.8, 3.9
-                        g.selectAll("rect")
-                            .data(colorDomain)
-                            .enter()
-                            .insert("rect",".tick")
-                                .attr("height", 20)
-                                .attr("width", x(colorDomain[2]) - x(colorDomain[1]))
-                                .attr("x", d => x(d))
-                                .attr("fill", (d,i) => colorRange[i])
-
-                        // drawmap
+                        drawTreshold()
                         drawmap()
                     }
                 }
